@@ -10,11 +10,11 @@
 |------|-------------|
 | `TELEGRAM BOT v2.5.json` | Workflow principale per la gestione eventi su Telegram. |
 | `promptBOT.txt` | Prompt di sistema per l'agente Adaxi, con linee guida per la creazione e moderazione eventi. |
-| `Adaxi - Agente (test).json` | Orchestratore che riceve le richieste e le smista agli agenti tecnici. |
-| `Adaxi - Agente Parchi.json` | Agente tecnico per la gestione segnalazioni relative ai parchi. |
-| `Adaxi - Agente Strade.json` | Agente tecnico per le segnalazioni relative alle strade. |
+| `Adaxi - Agente Orchestratore.json` | Esempio di Orchestratore che riceve le richieste e le smista agli agenti tecnici. |
+| `Adaxi - Agente Parchi.json` | Agente tecnico di esempio per la gestione segnalazioni relative ai parchi. Usato dall'Agente orchestratore |
+| `Adaxi - Agente Strade.json` | Agente tecnico di esempio per le segnalazioni relative alle strade. Usato dall'Agente orchestratore |
 | `Agente - Segnalazione Parchi.json` | Interfaccia Telegram per gestire segnalazioni ambientali e eventi. |
-| `Agente - Feedback Creazione Evento.json` | Tool per fornire feedback qualitativo automatico sugli eventi già creati. |
+| `Agente - Feedback Creazione Evento.json` | Tool per fornire feedback qualitativo automatico sugli eventi già creati. Viene chiamato da un flusso creato ad hoc su Gancio |
 | `LICENSE` | Licenza open source del progetto. |
 
 ---
@@ -55,7 +55,7 @@ L'agente eventi:
 
 ## 🛠 Tecnologie
 
-- **n8n** (automazione e orchestrazione)
+- **n8n** (automazione e orchestrazione): https://docs.n8n.io/hosting/
 - **OpenAI GPT-4 / GPT-4o** (ragionamento linguistico)
 - **Telegram Bot API**
 - **Supabase** (database eventi)
