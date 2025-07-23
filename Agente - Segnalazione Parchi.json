@@ -1,0 +1,470 @@
+{
+  "name": "Provainviobottoni copy 3",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        60,
+        140
+      ],
+      "id": "0d87173e-d83b-455d-9270-f752851068ed",
+      "name": "Telegram Trigger",
+      "webhookId": "e67143f1-afea-4a5d-81c7-698baafed456",
+      "credentials": {
+        "telegramApi": {
+          "id": "X0xlZeTzcYhElGN9",
+          "name": "TelegramSoSProva_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.callback_query.id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "45cbf6a3-83d0-45f9-8c16-76391a31a14c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "è una callback"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7a21e32e-9126-4cf7-9a6f-9ea158f8999d",
+                    "leftValue": "={{ $json.callback_query.id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "non è callback"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        280,
+        140
+      ],
+      "id": "2c432c60-392d-4a24-8e07-cd216dce79d6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=Sei un assistente civico integrato in un bot Telegram per la città di Bari.  Quando ricevi un messaggio dal cittadino, segui queste regole:\n\n🟡 1. Se il messaggio è troppo vago e non ti permette di capire se si riferisce a un evento o a un’area verde:\n→ Usa il tool recap_aree per fornire al cittadino un riepilogo delle categorie disponibili.\n⚠️ In questo caso non generare alcuna risposta manuale. Il tool risponderà al posto tuo.\n\n🟢 2. Se si tratta di un EVENTO:\nAssicurati che il cittadino ti fornisca almeno:\n\nNome dell’evento\n\nData dell’evento\nSe uno dei due dati manca, chiedilo in modo cortese.\nQuando hai raccolto tutto, ripeti le informazioni al cittadino per conferma.\n\n🌳 3. Se si tratta di un’AREA VERDE:\nAssicurati che il cittadino ti fornisca almeno:\n\nNome del parco o area verde\n\nDescrizione del problema o suggerimento\nSe mancano, chiedili in modo chiaro.\nQuando hai tutto, ripeti le informazioni per conferma.\n\nMantieni sempre un tono cortese, pratico e collaborativo. Il tuo obiettivo è aiutare il cittadino a completare correttamente la segnalazione o richiesta.\n\n\nIl tuo compito è analizzare il messaggio dell’utente e:\n\n1. Estrarre e salvare sempre i seguenti dati:\n- Data e ora (formato ISO 8601, es. 2025-07-14T15:45:00)\n- Indirizzo e Luogo in formato coordinate geografiche:\n  {\n    \"lat\": 41.1171,\n    \"lon\": 16.8719\n  }\n- Categoria della segnalazione, deduci la più coerente tra:\n  - “strutture e manutenzione”\n  - “accessibilità”\n  - “ambiente e pulizia”\n  - “natura e biodiversità”\n  - “servizi e attività”,\n- Descrizione testuale della segnalazione: una sintesi chiara del problema\n- user_id: ID Telegram dell’utente, se disponibile.\n\nChiedi all’utente quando ha riscontrato il problema, specificato in giorno e orario da inserire in data segnalazione, se risponde “adesso, ora” prendere gli stessi dati di created_at.\n\nL’utente deve descrivere in maniera chiara la segnalazione o il guasto, altrimenti chiedi di specificarlo.\n\n\n2. Quando hai ottenuto tutti i dati, usa lo strumento aggiungi_segnalazione per salvarli nel database.\n\n⚠️ Non restituire nulla all’utente finché non hai usato correttamente lo strumento aggiungi_segnalazione. Se uno o più dati mancano, puoi dedurli da descrizione e chiedere all’utente di integrarli se serve.\n\nIl tool a tua disposizione si chiama aggiungi_segnalazione e serve esclusivamente a salvare la segnalazione nel database.\n\n3. Una volta aggiunti i dati con aggiungi_segnalazione ringrazia l'utente e indica la categoria in cui è stata aggiunta.\n\nIn archivio_segnalazioni si trovano tutte le segnalazioni ricevute finora. Se archivio_segnalazioni contiene già una segnalazione con luogo, categoria e descrizione simili, segnalarlo all'utente. \n\nChiedere conferma all'utente prima di aggiungere nuovi dati su aggiungi_segnalazione se esistono già segnalazioni simili su archivio_segnalazioni. Fornire all'utente i dettagli riguardo la segnalazione già esistente (fornendo descrizione, categoria, luogo, timestamp). Se l'utente conferma che si tratta della stessa segnalazione già presente su archivio_segnalazioni allora non salvare i dati su aggiungi segnalazione, in caso contrario, se l'utente riconosce che si tratta di dati diversi, salva i dati con aggiungi_segnalazione.\nLa data di oggi è: {{ $now }}. Può esserti utile per interpretare riferimenti relativi come “oggi”, “domani”, “sabato”."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        120
+      ],
+      "id": "ee0c1a3a-2e18-4f47-b49c-268cf5b5f0fb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        300
+      ],
+      "id": "0d62290e-2637-415c-b115-c98998c91dce",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chat_id }}",
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1100,
+        460
+      ],
+      "id": "9d37cc0e-5fd5-4661-ade6-5d2f4db7fe75",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "recap_aree",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "Scegli un'area di interesse",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Aree Verdi",
+                    "additionalFields": {
+                      "callback_data": "Voglio segnalare un problema in un parco"
+                    }
+                  },
+                  {
+                    "text": "Eventi",
+                    "additionalFields": {
+                      "callback_data": "voglio aggiungere un evento a Bari"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegramTool",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        420
+      ],
+      "id": "77875f13-2d18-4862-95af-a3103f26d4fe",
+      "name": "Send a text message in Telegram",
+      "webhookId": "2c8a280b-d4ff-460d-a758-caa495fa77d3",
+      "credentials": {
+        "telegramApi": {
+          "id": "X0xlZeTzcYhElGN9",
+          "name": "TelegramSoSProva_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Merge').item.json.chat_id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1420,
+        120
+      ],
+      "id": "26a8af14-1670-4214-a1e5-2659bbb1044e",
+      "name": "Send a text message",
+      "webhookId": "87e96152-8abc-44bf-9a43-1b82f59dca7a",
+      "credentials": {
+        "telegramApi": {
+          "id": "X0xlZeTzcYhElGN9",
+          "name": "TelegramSoSProva_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"text\": \"{{ $json.callback_query.data }}\",\n  \"chat_id\": {{ $json.callback_query.message.chat.id }}\n}\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        40
+      ],
+      "id": "75698fa6-0357-4054-87cf-96cced83009b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"text\": \"{{ $json.message.text }}\",\n  \"chat_id\": {{ $json.message.chat.id }}\n}\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        500,
+        200
+      ],
+      "id": "f2585881-bc36-411c-a40e-020b78906a1b",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        840,
+        140
+      ],
+      "id": "be61f95e-22fc-4397-94a4-bc2d9563a9f6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "archivio_segnalazioni",
+        "operation": "getAll",
+        "tableId": "segnalazioni"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        460
+      ],
+      "id": "1f0ae14a-784f-4514-bba0-00444c7e30f3",
+      "name": "Get many rows in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "N583roW5P1cbz4Q0",
+          "name": "Supabase account Official?"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "aggiungi_segnalazione",
+        "tableId": "segnalazioni",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "descrizione",
+              "fieldValue": "={{ $fromAI('descrizione') }}"
+            },
+            {
+              "fieldId": "luogo",
+              "fieldValue": "={{ $fromAI('luogo') }}"
+            },
+            {
+              "fieldId": "categoria",
+              "fieldValue": "={{ $fromAI('categoria') }}"
+            },
+            {
+              "fieldId": "data_segnalazione",
+              "fieldValue": "={{ $fromAI('data_segnalazione') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        480
+      ],
+      "id": "a924313b-361d-4f13-8aba-55ae2ce732f9",
+      "name": "Create a row in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "N583roW5P1cbz4Q0",
+          "name": "Supabase account Official?"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message in Telegram": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows in Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row in Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "67e8626b-682c-462b-ad9a-3618de2fe732",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "84b773062f242e4406febde4324f1f44a8ca8587a26faadb492bb81e2b4e5d32"
+  },
+  "id": "qzPhL4DtKb0VdLcy",
+  "tags": []
+}

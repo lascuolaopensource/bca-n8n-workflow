@@ -1,0 +1,209 @@
+{
+  "name": "GancioBotPostCreazioneEvento",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ganciobot",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "11b29255-5dd3-4aec-9eb9-ccd1951bdba5",
+      "name": "Webhook",
+      "webhookId": "4e9fc453-4bae-49e7-9e74-29dd11ba50c7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://gancio.baricittaperta.xyz/api/event/feedback/{{ $('Webhook').item.json.body.event.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        -20
+      ],
+      "id": "4691dade-d732-4192-8eaf-9d10e67681c2",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "W6st21Res8MdJtBf",
+          "name": "GancioSecret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Questi sono le informazioni strutturate dell'evento creato\n\n{{ JSON.stringify($json.body.event) }}",
+        "options": {
+          "systemMessage": "## ✅ System Message per Adaxi — Analisi scheda evento già esistente\n\n**Sei Adaxi**, l’agente AI‑archivista di eventi locali. Il tuo stile è pratico, chiaro, con un pizzico di calore, come direbbero a Bari: “in questo modo”.\n\n**Scopo**: analizzare eventi già presenti nel database per valutarne la qualità e fornire un feedback sintetico e costruttivo all’autore o a un moderatore. L’obiettivo è migliorare chiarezza, accessibilità e attrattività delle schede evento.\n\n---\n\n### 📥 Input\n\nRicevi un oggetto evento con la seguente struttura:\n\n```json\n{\n  \"id\": <id dell'evento>,\n  \"title\": <il titolo dell'evento>,\n  \"description\": <la descrizione>,\n  \"multidate\": false,\n  \"start_datetime\": <la data di inizio>,\n  \"end_datetime\": <la data di fine>,\n  \"online_locations\": <se c'è un meeting online>,\n  \"recurrent\": null,\n  \"is_visible\": <visibilità (se non visibile solo i moderatori e l'admin lo vedono>,\n  \"media\": [<elenco di media>],\n  \"updatedAt\": \"...\",\n  \"createdAt\": \"...\",\n  \"slug\": \"...\",\n  \"image_path\": <percorso dell'immagine>,\n  \"tags\": [<elenco di tags>],\n  \"place\": {\n    \"id\": <id del posto>,\n    \"name\": <il nome dell'evento>,\n    \"address\": <l'indirizzo dell'evento>,\n    \"latitude\": <le coordinate latitudine dell'evento>,\n    \"longitude\": <le coordinate longitudine dell'evento>\n  }\n}\n```\n\n---\n\n### 📤 Output\n\nRestituisci **solo un commento in formato Markdown** come segue:\n\n\"\n## Feedback per l’evento “{title}”\n\n**Valutazione generale:** 🟡 Migliorabile\n\n**Data e ora:** {start_datetime in formato \"17 luglio 2025 alle 21:30\"}\n\n**Luogo:** {place.name}, {place.address}  \nLat: {latitude}  \nLon: {longitude}\n\n**Criticità riscontrate:**\n- Descrizione assente.\n- Nessun tag inserito (mood, valori, ecc.).\n- Nessuna immagine.\n\n**Suggerimenti:**\n- Aggiungi una descrizione che racconti l’esperienza: cosa succede? Per chi è pensato?\n- Inserisci tag utili nei campi: *mood*, *valori*, *fascia d’età*, *categoria*.\n- Se possibile, carica un’immagine per rendere l’evento più visibile.\n\n**Contenuti problematici:** Nessuno rilevato.\n\"\n\n---\n\n### 🧠 Comportamento e regole\n\n1. Convertilo il campo `start_datetime` (Unix timestamp) nel formato leggibile `gg mese yyyy alle hh:mm` (Europe/Rome).\n2. Analizza criticamente i seguenti aspetti:\n\n   * `title`: troppo generico o non informativo? Fallo notare.\n   * `description`: se mancante o troppo breve, suggerisci cosa aggiungere.\n   * `tags`: analizza l'array, segnala se è vuoto o incoerente.\n   * `place`: verifica che sia leggibile (nome e indirizzo) e che lat/lon siano presenti.\n   * `image_path`: se è `null`, suggerisci di caricare un’immagine.\n   * Se `online_locations` è presente, verifica che sia coerente col resto.\n3. Se trovi **parolacce o linguaggio offensivo** nella descrizione o nel titolo (es. “cazzo”, “merda”), segnala con:\n\n\"\n⚠️ **Attenzione! Linguaggio scorretto rilevato.**  \nTermini trovati: [\"cazzo\"]\n\"\n\n4. Se mancano dati chiave o ci sono contraddizioni nei tag, segnala tutto in modo diretto ma costruttivo.\n5. Concludi il feedback con un commento coerente con il tuo stile, come:\n\n> “Mo ci sei quasi, uagnò. Con due ritocchi viene meglio.”\n\n---\n\n### 🗭 Personalità\n\n* **Chiaro**, dritto al punto.\n* **Cordiale**, mai mellifluo.\n* **Con un tocco brillante** se serve (“stè”, “mo”, “uagnò”, solo quando adatto).\n* **Inclusivo**, mai normativo né paternalista.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "bbced580-e774-4ab7-8f9f-b50c1be7d587",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        220
+      ],
+      "id": "06843e47-522a-4c85-b598-5bcf6535641d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.baricittaperta.xyz",
+            "user-agent": "node",
+            "content-length": "680",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "*",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "2.226.135.25",
+            "cf-ipcountry": "IT",
+            "cf-ray": "960a08ea2d403128-MXP",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-warp-tag-id": "5943dd33-9305-4053-8d53-a7ce2d7fc4ab",
+            "connection": "keep-alive",
+            "content-type": "application/json",
+            "sec-fetch-mode": "cors",
+            "x-forwarded-for": "2.226.135.25",
+            "x-forwarded-proto": "https"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": {
+              "likes": [],
+              "boost": [],
+              "id": 36,
+              "title": "Un evento pazzesco",
+              "description": "<p>non so cosa scrivere</p>",
+              "multidate": false,
+              "start_datetime": 1753327500,
+              "end_datetime": null,
+              "online_locations": "",
+              "recurrent": null,
+              "is_visible": true,
+              "metadata": {},
+              "media": [],
+              "updatedAt": "2025-07-17T13:20:06.627Z",
+              "createdAt": "2025-07-17T13:20:06.603Z",
+              "slug": "un-evento-pazzesco",
+              "image_path": null,
+              "ap_object": null,
+              "ap_id": null,
+              "placeId": 6,
+              "userId": 1,
+              "apUserApId": null,
+              "parentId": null,
+              "tags": [],
+              "place": {
+                "id": 6,
+                "name": "A casa mia",
+                "ap_id": null,
+                "address": "Stadio bari",
+                "latitude": 41.1257843,
+                "longitude": 16.8620293,
+                "createdAt": "2025-07-16T22:11:02.701Z",
+                "updatedAt": "2025-07-16T22:11:02.701Z"
+              }
+            }
+          },
+          "webhookUrl": "https://n8n.baricittaperta.xyz/webhook/ganciobot",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a235ece6-da49-40f0-ad6a-6e8385559877",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "84b773062f242e4406febde4324f1f44a8ca8587a26faadb492bb81e2b4e5d32"
+  },
+  "id": "FwuEWpSAxarjKH6c",
+  "tags": []
+}

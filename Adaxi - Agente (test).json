@@ -1,0 +1,555 @@
+{
+  "name": "Adaxi - Agente (test)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "={{ $json.prompt }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        820,
+        -100
+      ],
+      "id": "2a865c63-e679-49ce-a2e4-9f18c3c3d1f5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        840,
+        120
+      ],
+      "id": "74d3cfc4-4d37-481f-805b-4b11c0f47360",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -760,
+        -80
+      ],
+      "id": "cfdbe511-6484-42ec-91d7-2c6b2029cb1f",
+      "name": "Telegram Trigger",
+      "webhookId": "863a3ace-6402-415c-9b53-1d76ca5e1ce6",
+      "credentials": {
+        "telegramApi": {
+          "id": "h587CrfF0IMZxDpW",
+          "name": "ADAXI MEGABOT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendChatAction",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        -80
+      ],
+      "id": "5bcdf094-2183-4627-afbc-78fbe0a947cd",
+      "name": "Send a chat action",
+      "webhookId": "bab6fc65-2562-416d-b6de-040c0fb3bedb",
+      "credentials": {
+        "telegramApi": {
+          "id": "h587CrfF0IMZxDpW",
+          "name": "ADAXI MEGABOT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d5eb62-a561-4337-974b-20bf1a6a945a",
+              "name": "prompt",
+              "value": "Ti chiami Adaxi e sei un assistente virtuale allo sportello digitale del Comune di Bari. Il tuo compito è accogliere le richieste dei cittadini in modo cortese e ordinato, e inoltrarle a un secondo agente specializzato (tecnico) che si occupa della gestione operativa e delle risposte tecniche.\n\nQuando ricevi una richiesta:\n1. Accoglila con gentilezza e formalità, confermando di averla ricevuta.\n2. Verifica che la richiesta sia relativa al territorio di Bari e che tra i tool disponibili ce ne sia uno in grado di processare la richiesta. Procedi al punto successivo solo se la richiesta può effettivamente essere soddisfatta da un agente esistenti, altrimenti rispondi con cortesia che la richiesta non è di tua competenza o che non c'è ancora un agente disponibile.\n3. Inoltrala senza modificarla o interpretarla al secondo agente tecnico.\n4. Solo se il secondo agente ti richiede informazioni aggiuntive, chiedile all’utente con chiarezza e rispetto.\n5. Non fornire direttamente risposte tecniche o soluzioni: il tuo ruolo è di filtro iniziale e di collegamento tra il cittadino e l’agente tecnico.\n\nMantieni sempre un tono professionale, istituzionale e amichevole. Non inventare risposte. Attieniti esclusivamente a quanto richiesto dal secondo agente.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        620,
+        -100
+      ],
+      "id": "bceb2db4-4cac-4049-bae6-146f4365fa5c",
+      "name": "Prompt"
+    },
+    {
+      "parameters": {
+        "description": "Tecnico dei parchi",
+        "workflowId": {
+          "__rl": true,
+          "value": "sx5h02Yu6pzkhr9D",
+          "mode": "list",
+          "cachedResultName": "Adaxi - Agente Parchi"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+            "chatInput": "={{ $fromAI('query', 'La richiesta da fare al tecnico del comune dei parchi') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatInput",
+              "displayName": "chatInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        120
+      ],
+      "id": "cff514d1-1f6f-4164-a871-528afef236c5",
+      "name": "Agente Parchi"
+    },
+    {
+      "parameters": {
+        "description": "Tecnico strade",
+        "workflowId": {
+          "__rl": true,
+          "value": "xtwpDD3fvbA9JHWO",
+          "mode": "list",
+          "cachedResultName": "Adaxi - Agente Strade"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatInput": "={{ $fromAI('query', 'La richiesta da fare al tecnico del comune delle strade') }}",
+            "sessionId": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatInput",
+              "displayName": "chatInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1080,
+        120
+      ],
+      "id": "bc10e20d-3495-4922-b950-8cc64e8ab089",
+      "name": "Agente Strade"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/",
+                    "id": "3e318046-a3ad-4c42-932f-fb7cb2c7609e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "dd41bbf0-bee0-450b-9160-b769821a4abc",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0d4d5213-49ea-4c4c-8c23-31be489d9612",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a5ae3c57-fe71-4c9e-8b83-81f4ceae9e72",
+                    "leftValue": "={{ $json.message.location }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Location"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "96c51624-6b89-426e-abd8-8aed4e291123",
+      "name": "Determine content type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -520,
+        -120
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        20,
+        -120
+      ],
+      "id": "78b53414-5d57-478f-9917-79e7407d1d0a",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9230006f-8490-4e1d-b461-ebfa247be1dc",
+              "name": "text",
+              "value": "={{ $json.message.location }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -220,
+        -40
+      ],
+      "id": "09d7e8fc-3cf6-40f1-a0d2-bd53a65629c8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "30691067-3487-450a-8287-d32ce104dd5a",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -220,
+        -240
+      ],
+      "id": "bd1c950c-be89-4f41-9f11-59cd4418822a",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "gpt-4"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        120
+      ],
+      "id": "a95828af-c919-4e92-b679-0ddd564bd2ad",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Determine content type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Send a chat action": {
+      "main": [
+        [
+          {
+            "node": "Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Parchi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Strade": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine content type": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send a chat action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "254c4281-dd0c-409f-b0d3-af18d0ae7053",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "84b773062f242e4406febde4324f1f44a8ca8587a26faadb492bb81e2b4e5d32"
+  },
+  "id": "rmH8Ta66GwfTgI6N",
+  "tags": []
+}

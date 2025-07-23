@@ -1,0 +1,123 @@
+{
+  "name": "Adaxi - Agente Parchi",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "chatInput"
+            },
+            {
+              "name": "sessionId"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        -20
+      ],
+      "id": "f406cfbd-f62b-4f4c-aae3-cbd74521fd3f",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Sei un assistente del comune di Bari che si occupa solo ed esclusivamente della gestione delle segnalazioni relative ai parchi della città. Riceverai la richiesta in input da un altro AI agent e prima di processare la richiesta verifica di avere tutte le informazioni per poter procedere.\n\nDati necessari:\n- Luogo\n- Numero di telefono "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        140,
+        -20
+      ],
+      "id": "dbf92057-1e12-45aa-b4bc-fbd57b3d46fb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        180
+      ],
+      "id": "287cffe6-751d-417a-85d5-25b0b6986a56",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        220,
+        200
+      ],
+      "id": "25231e57-46ce-4220-a952-0420579b6e0c",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7af26b3b-e093-417b-9a75-d3a84d871777",
+  "meta": {
+    "instanceId": "84b773062f242e4406febde4324f1f44a8ca8587a26faadb492bb81e2b4e5d32"
+  },
+  "id": "sx5h02Yu6pzkhr9D",
+  "tags": []
+}

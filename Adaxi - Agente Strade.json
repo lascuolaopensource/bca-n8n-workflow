@@ -1,0 +1,133 @@
+{
+  "name": "Adaxi - Agente Strade",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "chatInput"
+            },
+            {
+              "name": "sessionId"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -280,
+        -20
+      ],
+      "id": "0ecf2ac7-d598-4c56-b874-7008ac89f954",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Sei un assistente del comune di Bari che si occupa solo ed esclusivamente della gestione delle segnalazioni relative alla gestione delle strade della città. Riceverai la richiesta in input da un altro AI agent e prima di processare la richiesta verifica di avere tutte le informazioni per poter procedere.\n\nDati obbligatori\n- Luogo: hai due possibilità:\n1. puoi ricevere l'informazione via Telegram (latitudine e longitudine) \n2. come messaggio di testo dell'indirizzo.\n- Numero di telefono \n\nDati non obbligatori:\n- Foto\n\nL'immagine non è obbligatoria ma fortemente consigliata, il numero di telefono è obbligatorio. Non procedere finché non hai i dati necessari."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        140,
+        -20
+      ],
+      "id": "b813943d-df1a-4360-a9e4-6a21fe193fde",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        180
+      ],
+      "id": "36e9ebdb-993f-4ed4-9943-469fd73a257b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        220,
+        200
+      ],
+      "id": "dab2a353-3021-4cda-bda5-87c6a1423d6d",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "09e76c9e-fb97-4040-82cc-e7c389d99da3",
+  "meta": {
+    "instanceId": "84b773062f242e4406febde4324f1f44a8ca8587a26faadb492bb81e2b4e5d32"
+  },
+  "id": "xtwpDD3fvbA9JHWO",
+  "tags": [
+    {
+      "createdAt": "2025-07-16T15:31:07.735Z",
+      "updatedAt": "2025-07-16T15:31:07.735Z",
+      "id": "4tSToPNZKxl7qXwu",
+      "name": "ADAXIMEGABOT"
+    }
+  ]
+}

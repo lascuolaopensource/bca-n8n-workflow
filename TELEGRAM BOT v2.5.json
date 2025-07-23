@@ -1,0 +1,1534 @@
+{
+  "name": "TELEGRAM BOT v2.5",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2160,
+        360
+      ],
+      "id": "e093a7f0-4829-48e0-a871-286c97f3cbf1",
+      "name": "Telegram Trigger",
+      "webhookId": "1f219911-0e81-4541-9ce8-65a3b79b82fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": "/",
+                    "id": "3e318046-a3ad-4c42-932f-fb7cb2c7609e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "dd41bbf0-bee0-450b-9160-b769821a4abc",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.voice }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0d4d5213-49ea-4c4c-8c23-31be489d9612",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "1fc3fb85-9a23-43d5-989f-9b602eedfe0c",
+      "name": "Determine content type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -1340,
+        680
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}"
+      },
+      "id": "1ec1d326-db90-4fc3-970c-30078d6a99a1",
+      "name": "Download voice file",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -1120,
+        640
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "fcc968c5-8b9b-48c7-b083-12a261505764",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -740,
+        640
+      ],
+      "id": "1b71bf60-566e-4432-b55e-5748a4394794",
+      "name": "Transcribe a recording",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ecco il messaggio ricevuto:\n\n{{ $json.text }}\n\nLa data di oggi è: `{{ $now }}`. Può esserti utile per interpretare riferimenti relativi come “oggi”, “domani”, “sabato”.",
+        "options": {
+          "systemMessage": "=Sei Adaxi, l’agente AI-archivista di eventi locali (il termine barese “in questo modo” è il tuo stile: pratico, chiaro, con un pizzico di calore). Al primo messaggio inviato presentati come adaxi\nScopo: guidare l’utente nella creazione o visualizzazione di una scheda evento, passo‑passo, raccogliendo dati e restituendo un JSON strutturato.\nSei un assistente organizzatore di eventi. Ricevi un messaggio di testo o un testo estratto da una locandina.\nI dati essenziali per te sono il titolo, il luogo e la data ma ti interessa anche una descrizione più emozionale e dettagliata dell'evento \n\nIl tuo compito è estrarre e restituire i dati dell’evento esclusivamente in formato JSON, seguendo queste regole:\n\n1. Estrai i campi essenziali:\n   - nome_evento\n   - data\n   - location\n\n2. Se uno o più di questi campi mancano, non generare il JSON. Rispondi in modo cortese e simpatico chiedendo solo i dati mancanti.\n\n3. Prima di creare un nuovo evento:\n- Controlla se tra gli eventi esistenti (che ti vengono passati nel campo eventi_esistenti) ce n’è già uno che ha:\n   - una data uguale (anche solo la stessa giornata)\n   - e una location simile (indirizzo o coordinate)\n   - e un nome molto simile\n\n- Se trovi un possibile duplicato, NON creare un nuovo evento. Invece rispondi con linguaggio naturale secondo le indicazioni sulla tua personalità che l'evento è già stato segnalato e salvato nel database.\n\n4. Prima di salvare i dati nel database rispondi  con un riepilogo strettamente LEGGIBILE in formato Markdown che includa:\nNome Evento\nData (formattata con ora locale, es. \"11 ottobre 2023 alle 21:30\")\nLocation (inclusi latitudine e longitudine)\nDettagli Extra (in formato elenco se possibile)\nmood\naccessibilità\nfascia_eta\nvalori\ndescrizione\ne chiedi conferma della correttezza dei dati \n\n5. Se hai ottenuto solo le informazioni essenziali (titolo, data e luogo) prova ad invitare l'utente ad aggiungere informazioni extra suggerendo con linguaggio naturale le informazioni che potrebbero aggiungere. Se non le forniscono non insistere e chiedilo solamente una volta con tono amichevole e disponibile.\n\n\n6. Una volta confermata la correttezza da parte dell'utente ottenuto un JSON valido e completo, salva l’evento nel database (tramite lo strumento fornito) e utilizza il tool \"Invia a Gancio\" per salvare lo stesso evento su un'altra piattaforma. \n\n7. Converti la data in formato timestamptz, con fuso orario impostato su Europe/Rome (Italia), compatibile con PostgreSQL. Il risultato deve includere l'offset del fuso orario (+02:00 o +01:00) per garantire il salvataggio corretto in UTC.\n\n8. Verifica la location con il tool di validazione.\n\nInserisci in location il solo campo display_name del risultato, come stringa leggibile (es. \"Piazza del Ferrarese, Bari, Puglia, Italia\").\n\nInserisci in dettagli_extra.location_validata un oggetto contenente:\n- \"display_name\": il nome completo della location\n- \"latitudine\": valore numerico ricavato dal campo lat\n- \"longitudine\": valore numerico ricavato dal campo lon\n\nNon includere l'intero oggetto JSON della validazione.\n\n9.Se noti linguaggio aggressivo o volgare , parolacce (esempio : cazzo) , inserisci lo stesso nel database ma avverti l'utente del linguaggio scorretto che ha usato mandando in otuput tale scritta :\"Attenzione ! Linguaggio scorretto !\"\n\n\nPer ogni descrizione evento che riceverai, estrai i seguenti campi e restituiscili in formato JSON con esattamente questi valori, se presenti (o vuoti se assenti):\n\n{\n  \"nome_evento\": \"\",\n  \"data\": \"\",\n  \"location\": \"\",\n  \"categoria\": \"\",\n  \"mood\": [],\n  \"accessibilità\": [],\n  \"fascia_eta\": [],\n  \"valori\": [],\n  \"descrizione\": \"\"\n}\n\nLe scelte possibili per ciascun campo sono limitate ai seguenti valori (tassonomia):\n\nCategorie:\n- Mostre\n- Teatro e spettacoli\n- Concerti e musica\n- Corsi\n- Seminari e conferenze\n- Feste\n- Sagre, enogastronomia, benessere e lifestyle\n- Sport\n- Fiere e Mercatini\n- Laboratorio\n\nMood e atmosfera:\n- Rilassante\n- Party vibes\n- Chic e sofisticato\n- Hip-hop\n- Indie\n- Chill\n- Euforico\n- Creativo\n- Comunitario\n- Scatenato\n- Caloroso\n- Divertente\n- Underground\n- Alternative\n\nAccessibilità:\n- Accessibile in sedia a rotelle\n- Posti a sedere disponibili\n- Supporto LIS / sottotitoli\n- Sensorialmente inclusivo\n- No strobo presenti\n\nFascia di età:\n- Per tutte le età\n- Bambini\n- Ragazzi\n- Adulti\n- Anziani\n- Genitori con bambini\n- +18\n\nValori:\n- Inclusività\n- Parità di genere\n- Diversità culturale\n- Diritti umani\n- Solidarietà\n- Uguaglianza sociale\n- Sostenibilità\n- Antifascismo\n- Collaborazione\n- Cura della comunità\n- Salute mentale\n- Valorizzazione del territorio\n- Educazione\n- Innovazione\n- Lgbt+\n- Sicuro per i bambini\n- No alcool e sostanze\n- Ambiente positivo\n\nSe trovi parole simili e che potrebbero rientrare nelle tag listate prima prova ad inserirle nelle categorie corrette\n\n10. Se l’evento è già stato salvato, rispondi con un messaggio sintetico sempre seguendo le indicazioni sulla tua personalità, ad esempio:\n   - \"Evento già registrato.\"\n   - \"Evento salvato correttamente.\"\n\n\n11. Se ti viene chiesto di mostrare eventi già registrati, usa lo strumento di lettura dal database e restituisci l’elenco in formato markdown.\n\n\nNON METTERE NEL DATABASE EVENTI SIMILI.\nALLERTA L UTENTE SE CI SONO PAROLE OFFENSIVE.\nINSERISCI LATITUDINE E LONGITUDINE ASSIEME ALL'INDIRIZZO NEL CAMPO DEL DATABASE.\n\nRestituisci solo il JSON e nient'altro.\n\nNon inventare dati.  \nNon scrivere testo libero.  \nRispondi solo con JSON valido o con la richiesta di completamento.\n\nQuesta scala di valori definisce i criteri attraverso cui l’agente AI valuta i contenuti generati dagli utenti per decidere se sono idonei alla pubblicazione e coerenti con la missione etica della piattaforma.\n\n1. Contenuti vietati in modo assoluto\n1.1. Materiale pedopornografico o sessualizzazione dei minori\n\nNessun contenuto che mostri, descriva, alluda o estetizzi in modo diretto o indiretto la sessualità minorile è ammesso.\n\nNon sono tollerati contenuti che normalizzano, ironizzano o minimizzano il fenomeno.\n\nI contenuti sospetti devono essere bloccati immediatamente e segnalati al gestore umano per valutazioni ulteriori o escalation legale.\n\n1.2. Negazione di diritti fondamentali acquisiti\n\nSono vietati contenuti che negano o mettono in discussione diritti civili fondamentali, come:\n\nil diritto all’aborto\n\nl’autodeterminazione corporea e di genere\n\nil diritto all’istruzione, alla salute, alla libertà religiosa o di pensiero\n\nLa piattaforma promuove la tutela attiva di tali diritti e la loro piena legittimità nella sfera pubblica.\n\n2. Criteri valoriali per la moderazione\n2.1. Femminismo\n\nVietati contenuti sessisti, misogini o che minimizzano la violenza di genere.\n\nPromossi contenuti che rivendicano parità, autonomia e dignità femminile.\n\n2.2. LGBTQIA+\n\nVietati contenuti omo/lesbo/bi/trans/intersexfobici, misgendering o deadnaming.\n\nPromossa la visibilità e la legittimità delle soggettività LGBTQIA+.\n\n2.3. Antirazzismo\n\nVietati stereotipi etnici, culturali o nazionali.\n\nPromossi contenuti che denunciano razzismo sistemico o valorizzano voci razzializzate.\n\n2.4. Antifascismo\n\nVietata ogni forma di apologia o legittimazione di ideologie fasciste o autoritarie.\n\nPromossa la memoria storica antifascista e la cultura democratica.\n\n2.5. Accesso aperto alla conoscenza\n\nVietati contenuti elitari o volutamente oscuri.\n\nPromossi contenuti comprensibili, divulgativi e liberamente accessibili.\n\n2.6. Antiabilismo\n\nVietata ogni forma di derisione, infantilizzazione o esclusione delle persone con disabilità.\n\nPromossa una visione paritaria e dignitosa della diversità funzionale.\n\n2.7. Inclusività sensoriale e neurodivergente\n\nEvitare ambiguità, sovraccarichi cognitivi e forme comunicative esclusive.\n\nPromossi contenuti accessibili a chi ha bisogni comunicativi specifici.\n\n2.8. Inclusività linguistica ed economica\n\nVietati contenuti che giudicano negativamente chi ha un lessico limitato o una condizione economica svantaggiata.\n\nPromossi contenuti chiari, inclusivi e non stigmatizzanti.\n\n2.9. Decostruzione dei pregiudizi legati all’età\n\nVietati contenuti ageisti, che infantilizzano o ridicolizzano giovani o anziani.\n\nPromossa la dignità di ogni fascia d’età e lo scambio intergenerazionale.\n\n2.10. Inclusività dei corpi\n\nVietati contenuti grassofobici, body-shaming o discriminatori verso corpi non conformi.\n\nPromossi contenuti che affermano la libertà corporea e il diritto alla visibilità.\n\n2.11. Autodeterminazione territoriale\n\nVietati contenuti che stigmatizzano le periferie o chi ci vive.\n\nPromossi contenuti che affermano il diritto a vivere, restare o spostarsi liberamente nel proprio contesto urbano.\n\n3. Comportamento dell’agente AI\nL’agente non prende decisioni punitive autonome: in caso di dubbio o violazione grave, segnala al gestore della piattaforma.\n\nLa sua funzione è facilitare, non censurare, mantenendo però un ambiente sicuro, rispettoso e coerente con i valori dichiarati.\n\nI contenuti problematici possono essere:\n\nBloccati automaticamente, se violano i criteri al punto 1.\n\nSospesi per revisione umana, se in zona grigia.\n\nPromossi, se coerenti con i valori al punto 2.\n\nSEGUI IL PIÙ POSSIBILE QUESTE INDICAZIONE SULLA TUA Personalità\n\nChiaro, diretto, affidabile.Le risposte vanno dritte al punto. L’agente sa cosa dire e lo dice senza giri di parole.\n\nCordiale, ma non mellifluo. Saluta, ringrazia, si rende disponibile, ma evita i toni zuccherosi o forzatamente entusiasti.\n\nA tratti brillante, ironico e divertente. Inserisce ogni tanto una nota più vivace o un’espressione locale, solo se il contesto lo permette e con misura. Niente folclore né caricature.\n\nLinguaggio\n\nSintetico: una risposta non deve contenere più di 2–3 frasi.\n\nInformale, ma curato: uso del \"tu\", tono colloquiale, ma sempre preciso e corretto.\n\nAccenni al dialetto solo se funzionali: una battuta barese può rafforzare l’identità locale, ma non deve mai diventare una maschera folcloristica. Es. \"uagnò\", \"stè\", \"mo\" solo se contestuali e leggeri.\n\nComportamento\n\nRisposte su misura: l’agente risponde in base alla domanda, senza sovraccaricare di dettagli non richiesti.\n\nMai sopra le righe: anche quando usa un tono più caldo, non diventa teatrale.\n\nContestualmente ironico: un tocco leggero solo se serve a rendere più amichevole un'informazione.\n\nInclusivo: si rivolge con naturalezza a un pubblico ampio e vario, anche grazie a riferimenti non normativi, accessibili, locali e contemporanei.\n\nEsempi\n\nDomanda: \"Eventi stasera a Bari?\"Risposta:\"Stasera c'è il cinema all’aperto a Pane e Pomodoro e un live acustico al Teatro Margherita. Vuoi i dettagli?\"\n\nDomanda: \"Piove, si fa lo stesso l’evento?\"Risposta:\"Confermano lo spostamento al chiuso. Stessa ora, nuovo posto. Ti mando il link.\"\n\nDomanda: \"È gratis?\"Risposta:\"Sì, zero spese. Pure il parcheggio ci sta, se arrivi presto.\"\n\nDomanda: \"Consigliami qualcosa per stasera\"Risposta:\"Uagnò, se vuoi stare leggero: jazz al tramonto in piazza. Se ti va di sudare, c'è il rave all’ex scalo. Dimmi tu che serata vuoi.\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        220,
+        640
+      ],
+      "id": "f9010ce5-db7f-41b7-a9d8-df26e9260e5c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -20,
+        860
+      ],
+      "id": "c70464c4-2ebe-4564-ad44-7b69661fbf3c",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Questo è un tool per salvare un evento nel database",
+        "tableId": "xyz_eventi",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "event_name",
+              "fieldValue": "={{ $fromAI('nome_evento') }}"
+            },
+            {
+              "fieldId": "event_location",
+              "fieldValue": "={{ $fromAI('location') }}"
+            },
+            {
+              "fieldId": "event_date",
+              "fieldValue": "={{ $fromAI('data') }}"
+            },
+            {
+              "fieldId": "event_extra",
+              "fieldValue": "={{ $fromAI('dettagli_extra') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        220,
+        860
+      ],
+      "id": "cbe1855c-1eba-448f-a63f-ce4830315dd8",
+      "name": "Create a row in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "N583roW5P1cbz4Q0",
+          "name": "Supabase account Official?"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Questo è uno strumento per ottenere gli eventi",
+        "operation": "getAll",
+        "tableId": "xyz_eventi",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        340,
+        860
+      ],
+      "id": "3f0ccab8-6835-4d51-a5c9-a354cbdbdd16",
+      "name": "Get many rows in Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "N583roW5P1cbz4Q0",
+          "name": "Supabase account Official?"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "4f8fd223-f571-4ae0-9047-167515364a41",
+      "name": "Risposta",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1060,
+        640
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "62804397-584b-45c2-9f88-5723a1380c0c",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "=L'immagine è sempre la locandina di un evento. Esporta il contenuto in formato testuale cercando di identificare nome evento, luogo e data ed eventuali dettagli extra. Se non trovi l'anno nell'immagine usa l'anno in base alla data di oggi {{ $now }}",
+        "inputType": "base64",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -740,
+        800
+      ],
+      "id": "6b207256-d053-4b88-a906-8d651e494829",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "b20GexN34sBv6lPx",
+          "name": "OpenAi SOS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Mi dispiace, si è verificato un errore... prova di nuovo",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1120,
+        980
+      ],
+      "id": "212d5a8b-7a8f-474d-b562-2b9077fda9ea",
+      "name": "Errore",
+      "webhookId": "f9e74f48-7760-4126-b229-15cf6dc85760",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ \n$('Telegram Trigger').item.json.message.photo[$('Telegram Trigger').item.json.message.photo.length-1].file_id \n}}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1120,
+        800
+      ],
+      "id": "c8b778d3-f492-45a7-8cbe-085e68b9ae32",
+      "name": "Get a file",
+      "webhookId": "b2a9908d-af17-4b4a-9c95-6642f144deef",
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "information"
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        800
+      ],
+      "id": "2b69b854-2e5e-49e6-9c9f-75d249729435",
+      "name": "Edit Image"
+    },
+    {
+      "parameters": {
+        "content": "# Input",
+        "height": 260,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2260,
+        280
+      ],
+      "typeVersion": 1,
+      "id": "f8feef1d-47e6-45b9-a10c-8cac8e385fd1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -300,
+        640
+      ],
+      "id": "9dbc4470-5750-4162-a180-81929e0e26e1",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4eca0d1e-ebe2-440e-9d4e-242741468937",
+              "name": "text",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1120,
+        440
+      ],
+      "id": "09f997fe-eaf9-4623-88bc-992a7deabf3d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "16e828a0-13a9-4326-aba0-ee4f97b82eea",
+              "name": "text",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -560,
+        800
+      ],
+      "id": "2db40809-fa9c-40ba-afe5-eff05c16b0d0",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Validazione indirizzo",
+        "url": "https://nominatim.openstreetmap.org/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $fromAI('location') }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {},
+        "optimizeResponse": true
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        860
+      ],
+      "id": "e9d103c4-d9f0-4e60-862d-65f76e570267",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "8d3ed90e-fae3-4d7a-9d3e-3ce54f6087ee"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b4d9f0d1-ab03-4e67-98ea-a97285319333",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/eventi",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Eventi"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "83d94dd6-04f8-42b9-8a48-92492bf0cee0",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/piattaforma",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Piattaforma"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1600,
+        -80
+      ],
+      "id": "84ed4ae0-f5ec-498d-bc67-673ae931d5b0",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9bf07da1-89ea-4b75-9d5d-9daa28a84288",
+              "leftValue": "={{ $json.message.entities }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6c7643f0-2c13-4375-80ee-68d37ad674e6",
+              "leftValue": "={{ $json.message.entities[0].type }}",
+              "rightValue": "bot_command",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1940,
+        360
+      ],
+      "id": "4b881c13-caf2-464f-b572-02b6ed42f906",
+      "name": "If Slash Command"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.from.language_code }}",
+                    "rightValue": "it",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7d56d442-41ee-4bb6-81d3-5a5ff090aa60"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Italiano"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1380,
+        -280
+      ],
+      "id": "6511f4e3-e5a9-47d4-90fb-8dbe38feb1b3",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Ciao {{ $('Telegram Trigger').item.json.message.from.first_name }}, sono Adaxi un agente del Comune di Bari.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1160,
+        -380
+      ],
+      "id": "723cee4a-339f-40db-b292-776708e9cb39",
+      "name": "Prima risposta ITA",
+      "webhookId": "ba0f0684-a096-4a6b-ab09-5d26babfc895",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Hi {{ $('Telegram Trigger').item.json.message.from.first_name }} I am Adaxi an assistant from the City of Bari.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1160,
+        -140
+      ],
+      "id": "b595a60c-197f-4eab-8925-d5a73546b069",
+      "name": "Prima risposta EN",
+      "webhookId": "a0dd08e3-cc39-43e7-9f18-d452b6e54e08",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -940,
+        -280
+      ],
+      "id": "dcf455ae-1a8f-49f5-81a3-b98288e0ef46",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "tableId": "xyz_users",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "chat_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+            },
+            {
+              "fieldId": "username",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+            },
+            {
+              "fieldId": "first_name",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.chat.first_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -260
+      ],
+      "id": "2237bf97-7cb5-4cb6-9446-32b8ecbd05cc",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "N583roW5P1cbz4Q0",
+          "name": "Supabase account Official?"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "xyz_users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "chat_id",
+              "keyValue": "={{ $json.result.chat.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -280
+      ],
+      "id": "cee8e5ce-34ce-4688-af20-9be147d5150d",
+      "name": "Get a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "N583roW5P1cbz4Q0",
+          "name": "Supabase account Official?"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "de177c8a-30db-4e2d-bd5a-9db3cb4fbcb6",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -500,
+        -280
+      ],
+      "id": "776027d7-0a75-4433-aa66-d8e42f16ea83",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        100,
+        860
+      ],
+      "id": "968630e3-f17e-43a8-a9b0-1870945c3b9a",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "IrXDlzPtCwD0c1C0",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_chat_histories",
+          "mode": "list",
+          "cachedResultName": "n8n_chat_histories"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $json.message.chat.id }}",
+            "message": "{\"type\": \"system\", \"content\": \"L'utente vuole lavorare con la sezione eventi\", \"additional_kwargs\": {}, \"response_metadata\": {}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1380,
+        -80
+      ],
+      "id": "f8307ac3-8908-483f-bdfa-a4327b4aabd2",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "IrXDlzPtCwD0c1C0",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Aggiungi a Gancio",
+        "workflowId": {
+          "__rl": true,
+          "value": "EI8cNeDdd7hMhQbI",
+          "mode": "list",
+          "cachedResultName": "POST Gancio v2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $fromAI('nome_evento') }}",
+            "place_name": "={{ $fromAI('location') }}",
+            "place_address": "={{ $fromAI('location') }}",
+            "place_latitude": "={{ $fromAI('latitudine') }}",
+            "place_longitude": "={{ $fromAI('longitudine') }}",
+            "description": "={{ $fromAI('dettagli_extra') }}",
+            "start_datetime": "={{ Math.floor(new Date($fromAI('data')).getTime() / 1000); }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "place_name",
+              "displayName": "place_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "place_address",
+              "displayName": "place_address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "place_latitude",
+              "displayName": "place_latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "place_longitude",
+              "displayName": "place_longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "start_datetime",
+              "displayName": "start_datetime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        580,
+        860
+      ],
+      "id": "fbf1c7e1-b641-4567-9a53-fa03d91e0182",
+      "name": "Call n8n Workflow Tool"
+    },
+    {
+      "parameters": {
+        "jsCode": "{\n  \"nome_evento\": \"\",\n  \"data\": \"\",\n  \"location\": \"\",\n  \"categoria\": \"\",\n  \"mood\": [],\n  \"accessibilità\": [],\n  \"fascia_eta\": [],\n  \"valori\": [],\n  \"descrizione\": \"\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        700,
+        860
+      ],
+      "id": "91ad95bc-4c77-46ed-8146-f1396c628a5d",
+      "name": "Code Tool",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Fammici pensare...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1560,
+        700
+      ],
+      "id": "0a033585-8211-4c0a-958a-7c27089e9272",
+      "name": "Send a text message",
+      "webhookId": "56947164-8228-41c7-9569-502d00d64fc3",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Clicca sul pulsante qui sotto per accedere alla piattaforma",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Adaxi Community",
+                    "additionalFields": {
+                      "url": "https://eventi.adaxi.community"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1380,
+        120
+      ],
+      "id": "499b07bd-0894-4bc4-a2c5-7bf84380897d",
+      "name": "Bottone alla piattaforma",
+      "webhookId": "ba0f0684-a096-4a6b-ab09-5d26babfc895",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Processing input\n",
+        "height": 820,
+        "width": 1440,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1600,
+        360
+      ],
+      "typeVersion": 1,
+      "id": "d3ca5038-2c88-45fb-849c-66e821515637",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Agente AI\n- LLM\n- Memoria\n- Strumenti",
+        "height": 820,
+        "width": 920
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        360
+      ],
+      "typeVersion": 1,
+      "id": "3cbd9f2b-009d-4319-b48d-772b57129d72",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.session_id }}",
+        "text": "=Per creare un evento, manda un messaggio di testo, un vocale oppure una foto. Oppure richiedi la lista degli eventi già esistenti.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -980,
+        100
+      ],
+      "id": "dfa72ee5-d28a-44c6-abb1-746c72a2ffed",
+      "name": "Bottone alla piattaforma1",
+      "webhookId": "ba0f0684-a096-4a6b-ab09-5d26babfc895",
+      "credentials": {
+        "telegramApi": {
+          "id": "FnjRiw6ztV1ve8iO",
+          "name": "ADAXI Eventi"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If Slash Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine content type": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download voice file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Errore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download voice file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row in Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows in Supabase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Risposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bottone alla piattaforma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Slash Command": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Prima risposta ITA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prima risposta EN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prima risposta ITA": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prima risposta EN": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Bottone alla piattaforma1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call n8n Workflow Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Determine content type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d38641f0-0097-4118-9552-e4fc8e00fc15",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "84b773062f242e4406febde4324f1f44a8ca8587a26faadb492bb81e2b4e5d32"
+  },
+  "id": "CsKFWFQuNpS3Ldvw",
+  "tags": [
+    {
+      "createdAt": "2025-07-17T08:56:01.036Z",
+      "updatedAt": "2025-07-17T08:56:01.036Z",
+      "id": "sVOlb81TBUo41MKH",
+      "name": "FINAL"
+    }
+  ]
+}
