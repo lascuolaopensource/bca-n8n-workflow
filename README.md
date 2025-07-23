@@ -72,15 +72,3 @@ Utilizzata per il tagging automatico e la moderazione etica. Include:
 - **Accessibilità**, **valori**, **fascia d’età**, etc.
 
 (vedi `promptBOT.txt` per l’elenco completo)
-
----
-
-## ✅ Licenza
-
-Questo progetto è distribuito secondo la licenza contenuta nel file `LICENSE`.
-
----
-
-## 📩 Contatti e contributi
-
-Per contribuire o segnalare problemi, apri una issue o una pull request.
